@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi Watch Time Browser - Unlimited Views</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #ff5722;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .hidden {
+            display: none;
+        }
+        .feature-box {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px auto;
+            width: 80%;
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+        }
+        .feature-box:hover {
+            transform: scale(1.05);
+        }
+        .feature-box h2 {
+            color: white;
+        }
+        .coins-display {
+            font-size: 20px;
+            margin-top: 15px;
+            color: #fff;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+        button {
+            background-color: #ff5722;
+            cursor: pointer;
+            color: white;
+        }
+        .timer-display {
+            font-size: 18px;
+            margin-top: 15px;
+            color: #fff;
+        }
+        .footer {
+            margin-top: 30px;
+            padding: 10px;
+            background: #1e1e1e;
+            color: #FFD700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        Multi Watch Time Browser
+    </div>
+
+    <div class="container hidden" id="homePage">
+        <div class="coins-display">🪙 Coins: <span id="coinCount">0</span></div>
+        <div class="feature-box" onclick="watchAds()">
+            <h2>🎥 Ads देखें और Coins कमाएं</h2>
+        </div>
+        <div class="feature-box" onclick="showVideoInput()">
+            <h2>🔥 Unlimited Views</h2>
+        </div>
+        <div class="feature-box">
+            <h2>🎬 मेरा YouTube चैनल</h2>
+            <a href="https://youtube.com/@hpsarthik?si=IC2KIJT4uzNg2PqY" target="_blank">
+                <button>➡️ HP Sarthik चैनल देखें</button>
+            </a>
+        </div>
+    </div>
+
+    <div class="login-box" id="loginPage">
+        <h2>🔑 लॉगिन करें</h2>
+        <input type="email" id="email" placeholder="अपना Gmail डालें">
+        <br>
+        <button onclick="login()">🚀 लॉगिन करें</button>
+    </div>
+
+    <div class="hidden" id="videoInputSection">
+        <h2>🎥 अपनी वीडियो का URL डालें</h2>
+        <input type="text" id="videoUrl" placeholder="YouTube वीडियो URL">
+        <br>
+        <h2>📌 कितने Tabs खोलने हैं?</h2>
+        <input type="number" id="tabCount" placeholder="1 से 20" min="1" max="20">
+        <br>
+        <h2>⏳ वीडियो कितनी देर तक चलेगी? (मिनट में)</h2>
+        <input type="number" id="videoTimer" placeholder="1 से 1000" min="1" max="1000">
+        <br>
+        <button onclick="startVideo()">🚀 वीडियो शुरू करें</button>
+    </div>
+
+    <div class="timer-display hidden" id="timerDisplay">
+        ⏳ वीडियो रीस्टार्ट होने में: <span id="countdown">0</span> सेकंड
+    </div>
+
+    <div class="video-container hidden" id="videoContainer"></div>
+
+    <div class="footer">
+        <p>📧 Contact: <a href="mailto:hpsarthik001@gmail.com" style="color: #FFD700;">hpsarthik001@gmail.com</a></p>
+    </div>
+
+    <script>
+        let coins = localStorage.getItem("coins") ? parseInt(localStorage.getItem("coins")) : 3;
+        let userEmail = localStorage.getItem("userEmail");
+        let unlimitedViewsUsed = 0;
+        let countdownTimer;
+
+        function login() {
+            let email = document.getElementById("email").value;
+            if (!email.includes("@gmail.com")) {
+                alert("⚠ कृपया सही Gmail डालें!");
+                return;
+            }
+            localStorage.setItem("userEmail", email);
+            document.getElementById("loginPage").classList.add("hidden");
+            document.getElementById("homePage").classList.remove("hidden");
+        }
+
+        function showVideoInput() {
+            if (coins < 3) {
+                alert("⚠ Unlimited Views के लिए कम से कम 3 Coins चाहिए!");
+                return;
+            }
+            document.getElementById("videoInputSection").classList.remove("hidden");
+        }
+
+        function startVideo() {
+            let url = document.getElementById("videoUrl").value;
+            let tabCount = parseInt(document.getElementById("tabCount").value);
+            let videoTime = parseInt(document.getElementById("videoTimer").value) * 60;
+
+            let videoId = extractVideoID(url);
+            if (!videoId) {
+                alert("⚠ कृपया सही YouTube URL डालें!");
+                return;
+            }
+
+            document.getElementById("videoContainer").innerHTML = "";
+            document.getElementById("videoContainer").classList.remove("hidden");
+            document.getElementById("timerDisplay").classList.remove("hidden");
+
+            for (let i = 0; i < tabCount; i++) {
+                let videoBox = document.createElement("div");
+                videoBox.innerHTML = `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}?autoplay=1" allowfullscreen></iframe>`;
+                document.getElementById("videoContainer").appendChild(videoBox);
+            }
+
+            startCountdown(videoTime);
+        }
+
+        function startCountdown(seconds) {
+            clearInterval(countdownTimer);
+            let counter = seconds;
+            document.getElementById("countdown").innerText = counter;
+
+            countdownTimer = setInterval(() => {
+                counter--;
+                document.getElementById("countdown").innerText = counter;
+
+                if (counter <= 0) {
+                    clearInterval(countdownTimer);
+                    reloadVideos();
+                }
+            }, 1000);
+        }
+
+        function reloadVideos() {
+            let iframes = document.querySelectorAll("iframe");
+            iframes.forEach(iframe => {
+                iframe.src = iframe.src;
+            });
+            startCountdown(parseInt(document.getElementById("videoTimer").value) * 60);
+        }
+
+        function extractVideoID(url) {
+            let match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            return match ? match[1] : null;
+        }
+
+        function watchAds() {
+            coins++;
+            localStorage.setItem("coins", coins);
+            alert("✅ 1 Coin मिला!");
+            updateCoinDisplay();
+        }
+
+        function updateCoinDisplay() {
+            document.getElementById("coinCount").innerText = coins;
+        }
+
+        if (userEmail) {
+            document.getElementById("loginPage").classList.add("hidden");
+            document.getElementById("homePage").classList.remove("hidden");
+        }
+    </script>
+
+</body>
+</html>
